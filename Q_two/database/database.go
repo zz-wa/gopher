@@ -20,24 +20,3 @@ func Connect(path string) (*sql.DB, error) {
 	zap.L().Info("connected to database")
 	return db, nil
 }
-
-func GetURL(db *sql.DB) (map[string]string, error) {
-	rows, err := db.Query("SELECT originalURL, shorterURL   FROM urlShorter")
-	if err != nil {
-		zap.L().Error("error getting url", zap.Error(err))
-		return nil, err
-	}
-	defer rows.Close()
-
-	urls := make(map[string]string)
-
-	for rows.Next() {
-		var shorterURL, originalURL string
-		err := rows.Scan(&shorterURL, &originalURL)
-		if err != nil {
-			zap.L().Error("error getting url", zap.Error(err))
-		}
-		urls[originalURL] = shorterURL
-	}
-	return urls, nil
-}
