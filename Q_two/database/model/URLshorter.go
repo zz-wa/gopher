@@ -1,7 +1,9 @@
 package model
 
-type ShorterURL struct {
-	Number      int    `gorm:"primary_key" json:"number"`
-	OriginalURL string `gorm:"type:text" json:"originalURL"`
-	ShorterURL  string `gorm:"type:text" json:"shorterURL"`
+import "gorm.io/gorm"
+
+type URLShorter struct {
+	gorm.Model
+	OriginalURL string `gorm:"not null" json:"original_url"`
+	ShortURL    string `gorm:"not null" json:"short_url"`
 }
