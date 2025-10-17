@@ -1,72 +1,86 @@
 package handle
 
 import (
-	"database/sql"
+	"Q_two/database/model"
+	"fmt"
 	"net/http"
 
-	"go.uber.org/zap"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"gorm.io/gorm"
 )
 
-func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		path, ok := pathsToUrls[r.URL.Path]
-		if ok {
-			http.Redirect(w, r, path, http.StatusFound)
-		} else {
-			fallback.ServeHTTP(w, r)
-		}
-	}
+type Server struct {
+	database *gorm.DB
 }
 
-func GetURL(db *sql.DB, number int) (map[string]string, error) {
-	rows, err := db.Query("SELECT originalURL, shorterURL   FROM urlShorter WHERE number= ?", number)
-	if err != nil {
-		zap.L().Error("error getting url", zap.Error(err))
-		return nil, err
-	}
-	defer rows.Close()
-
-	urls := make(map[string]string)
-
-	for rows.Next() {
-		var shorterURL, originalURL string
-		err := rows.Scan(&shorterURL, &originalURL)
-		if err != nil {
-			zap.L().Error("error getting url", zap.Error(err))
-		}
-		urls[originalURL] = shorterURL
-	}
-	return urls, nil
+func NewServer(db *gorm.DB) *Server {
+	return &Server{database: db}
 }
 
-/*
-func YAMLHandler(yamlbuyes []byte, fallback http.Handler) (http.HandlerFunc, error) {
-	pathURLs, errr := ParseYaml(yamlbuyes)
-	if errr != nil {
-		log.Fatal(errr)
-		return nil, errr
-	}
-	pathsToUrls := buildMap(pathURLs)
-	return MapHandler(pathsToUrls, fallback), nil
+func (s *Server) RUN() error {
+	router := echo.New()
+	router.HideBanner = true
+	router.HidePort = true
+
+	router.Use(middleware.Recover())
+
+	router.POST("/urls", s.Insert)
+
+	router.GET("/*", s.MapHandler)
+	return router.Start(":8080")
+
 }
 
-// 解析Yaml,把数据编程Yaml对应的那个结构体
-func ParseYaml(data []byte) ([]pathURL, error) {
-	var pathURLs []pathURL
-	err := yaml.Unmarshal(data, &pathURLs)
-	if err != nil {
-		log.Fatal("yaml parse error", zap.Error(err))
-		return nil, err
+//这里要进行重定向操作
+
+func (s *Server) MapHandler(c echo.Context) error {
+	path := c.Request().URL.Path[1:]
+
+	if path == "" || path == "/" {
+		return c.String(http.StatusOK, "Hello, World!")
 	}
-	return pathURLs, nil
+
+	var url model.URLShorter
+	if err := s.database.Where("short_url = ?", path).First(&url).Error; err != nil {
+		return c.String(http.StatusNotFound, "Not Found")
+	}
+
+	return c.Redirect(http.StatusFound, url.OriginalURL)
+
 }
 
-// 把所有的一堆ParseYaml得到的结合在一起
-func buildMap(pathURLs []pathURL) map[string]string {
-	pathToUrl := make(map[string]string)
-	for _, pathURL := range pathURLs {
-		pathToUrl[pathURL.Path] = pathURL.URL
-	}
-	return pathToUrl
+type InsertReq struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
-*/
+
+type InsertRes struct {
+	ShortURL string `json:"short_url"`
+}
+
+// 插入的，但是在那里用捏
+
+func (S *Server) Insert(c echo.Context) error {
+	var request InsertReq
+	if err := c.Bind(&request); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": fmt.Sprintf("JSON bind failed: %v", err),
+		})
+	}
+	if request.OriginalURL == "" || request.ShortURL == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "short_url and original_url required"})
+	}
+
+	//插入语句
+
+	if err := S.database.Create(&model.URLShorter{
+		OriginalURL: request.OriginalURL,
+		ShortURL:    request.ShortURL,
+	}).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusCreated, InsertRes{ShortURL: request.ShortURL})
+
+}
