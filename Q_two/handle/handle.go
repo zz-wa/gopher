@@ -27,7 +27,7 @@ func (s *Server) RUN() error {
 
 	router.POST("/urls", s.Insert)
 
-	router.GET("/*", s.MapHandler)
+	router.GET("/:path", s.MapHandler)
 	return router.Start(":8080")
 
 }
@@ -35,8 +35,9 @@ func (s *Server) RUN() error {
 //这里要进行重定向操作
 
 func (s *Server) MapHandler(c echo.Context) error {
-	path := c.Request().URL.Path[1:]
-
+//	path := c.Request().URL.Path[1:]
+	path := c.Param("path")
+	
 	if path == "" || path == "/" {
 		return c.String(http.StatusOK, "Hello, World!")
 	}
