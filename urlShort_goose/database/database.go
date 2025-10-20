@@ -9,8 +9,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// 连接数据库
-// 现在没有迁移的相关代码
 
 func Connect(path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", path)
@@ -30,12 +28,3 @@ func Connect(path string) (*sql.DB, error) {
 	zap.L().Info("Connected to database", zap.String("path", path))
 	return db, nil
 }
-
-/*
-func RunMigrations(db *sql.DB) error {
-	if err := goose.RunMigrations(db, "sqlite", "./migrations", false); err != nil {
-		return fmt.Errorf("migrations failed: %w", err)
-	}
-	return nil
-}
-*/
