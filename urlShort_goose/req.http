@@ -1,0 +1,15 @@
+###
+
+# curl -X POST http://localhost:8080/urls
+#     -H "Content-Type: application/json"
+#     -d '{"short_url":"abc123","original_url":"https://google.com"}'
+POST http://localhost:8080/urls
+Content-Type: application/json
+
+{
+  "short_url": "me",
+  "original_url": "https://myaccount.google.com/?hl=en&utm_source=OGB&utm_medium=act&gar=WzJd"
+}
+
+###
+
