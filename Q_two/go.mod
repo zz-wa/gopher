@@ -1,4 +1,4 @@
-module Q_two
+module github.com/username/urlshort/gorm
 
 go 1.25
 
