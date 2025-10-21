@@ -1,4 +1,4 @@
-module Q_two_goose
+module module github.com/username/urlshort/goose
 
 go 1.25
 
