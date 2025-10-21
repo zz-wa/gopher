@@ -3,7 +3,7 @@
 CREATE  TABLE  url_Shorter(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     OriginalURL TEXT ,
-    ShortURL  TEXT
+    ShortURL  TEXT UNIQUE
 );
 -- +goose StatementEnd
 
